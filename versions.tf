@@ -6,7 +6,4 @@ terraform {
       version = ">= 5.0"
     }
   }
-
-  # IMPORTANT: backend vide -> on le configure via terraform init -backend-config
-  backend "s3" {}
 }

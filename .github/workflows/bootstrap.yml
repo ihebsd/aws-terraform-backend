@@ -10,7 +10,7 @@ on:
       region:
         description: "AWS region"
         required: true
-        default: "eu-west-1"
+        default: "eu-west-3"
         type: string
       bucket_name:
         description: "S3 bucket name (unique globalement)"
