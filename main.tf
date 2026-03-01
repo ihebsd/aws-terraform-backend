@@ -2,27 +2,12 @@ provider "aws" {
   region = var.region
 }
 
-locals {
-  bucket_name = "remote-state-infrastructure"
-  table_name  = "terraform-locks"
-  tags = {
-    ManagedBy  = "Terraform"
-    Repository = "infra-bootstrap"
-  }
+resource "aws_s3_bucket" "state_bucket" {
+  bucket = var.bucket_name
 }
 
-resource "aws_s3_bucket" "state" {
-  bucket = local.bucket_name
-
-  lifecycle {
-    prevent_destroy = true
-  }
-
-  tags = local.tags
-}
-
-resource "aws_s3_bucket_public_access_block" "block" {
-  bucket                  = aws_s3_bucket.state.id
+resource "aws_s3_bucket_public_access_block" "block_public" {
+  bucket                  = aws_s3_bucket.state_bucket.id
   block_public_acls       = true
   block_public_policy     = true
   ignore_public_acls      = true
@@ -30,12 +15,12 @@ resource "aws_s3_bucket_public_access_block" "block" {
 }
 
 resource "aws_s3_bucket_versioning" "versioning" {
-  bucket = aws_s3_bucket.state.id
+  bucket = aws_s3_bucket.state_bucket.id
   versioning_configuration { status = "Enabled" }
 }
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "sse" {
-  bucket = aws_s3_bucket.state.id
+  bucket = aws_s3_bucket.state_bucket.id
   rule {
     apply_server_side_encryption_by_default {
       sse_algorithm = "AES256"
@@ -44,7 +29,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "sse" {
 }
 
 resource "aws_dynamodb_table" "locks" {
-  name         = local.table_name
+  name         = var.dynamodb_table_name
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "LockID"
 
@@ -52,6 +37,4 @@ resource "aws_dynamodb_table" "locks" {
     name = "LockID"
     type = "S"
   }
-
-  tags = local.tags
 }
