@@ -40,7 +40,9 @@ resource "aws_dynamodb_table" "locks" {
 }
 
 resource "aws_s3_object" "prefix_marker" {
+  for_each = toset([trim(var.project, "/")])
+
   bucket  = aws_s3_bucket.state_bucket.id
-  key     = "${trim(var.project, "/")}/"
+  key     = "${each.value}/"
   content = ""
 }
