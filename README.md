@@ -16,8 +16,8 @@ This project initializes the remote backend infrastructure required for Terrafor
 
 It creates:
 
-- S3 bucket → stores the Terraform state file  
-- DynamoDB table → prevents concurrent state modifications (state locking)
+- 🪣 S3 bucket → stores the Terraform state file  
+- 🗄 DynamoDB table → prevents concurrent state modifications (state locking)
 
 This repository is meant to be executed once per AWS account/environment.
 
@@ -49,31 +49,40 @@ After creation, other Terraform projects can reference this backend.
 
 ### 1️⃣ Clone the repository
 
+```bash
 git clone https://github.com/<your-org>/aws-terraform-backend.git
 cd aws-terraform-backend
+```
 
 ### 2️⃣ Initialize Terraform
 
+```bash
 terraform init
+```
 
 ### 3️⃣ Review the plan
 
+```bash
 terraform plan
+```
 
 ### 4️⃣ Apply
 
+```bash
 terraform apply
+```
 
 ---
 
 ## 🔐 Important Notes
 
-- This project should initially use a local backend
+- This project should initially use a **local backend**
 - Do NOT configure the S3 backend in this repo before it is created
 - After creation, other Terraform projects can reference the generated S3 and DynamoDB resources
 
 Example backend configuration for other projects:
 
+```hcl
 terraform {
   backend "s3" {
     bucket         = "your-terraform-state-bucket"
@@ -83,11 +92,13 @@ terraform {
     encrypt        = true
   }
 }
+```
 
 ---
 
 ## 📁 Suggested Structure
 
+```
 aws-terraform-backend/
 │
 ├── main.tf
@@ -95,6 +106,7 @@ aws-terraform-backend/
 ├── outputs.tf
 ├── versions.tf
 └── README.md
+```
 
 ---
 
