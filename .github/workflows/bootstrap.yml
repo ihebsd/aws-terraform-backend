@@ -1,0 +1,68 @@
+name: Bootstrap Remote State Backend
+
+on:
+  workflow_dispatch:
+    inputs:
+      region:
+        description: "AWS region (ex: eu-west-1)"
+        required: true
+        default: "eu-west-1"
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    env:
+      TF_IN_AUTOMATION: "true"
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Configure AWS credentials (OIDC)
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+        aws-region: ${{ inputs.region }}
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.6.6
+
+    # Try init remote backend (if already exists)
+    - name: Terraform init (try remote)
+      id: init_remote
+      continue-on-error: true
+      run: |
+        terraform init -input=false \
+          -backend-config="bucket=remote-state-infrastructure" \
+          -backend-config="key=bootstrap/terraform.tfstate" \
+          -backend-config="region=${{ inputs.region }}" \
+          -backend-config="dynamodb_table=terraform-locks" \
+          -backend-config="encrypt=true"
+
+    # First time: create infra with local state, then migrate to S3 backend
+    - name: First-time bootstrap (local -> migrate)
+      if: steps.init_remote.outcome == 'failure'
+      run: |
+        terraform init -input=false -backend=false
+        terraform apply -auto-approve -input=false -var="region=${{ inputs.region }}"
+
+        terraform init -input=false -migrate-state \
+          -backend-config="bucket=remote-state-infrastructure" \
+          -backend-config="key=bootstrap/terraform.tfstate" \
+          -backend-config="region=${{ inputs.region }}" \
+          -backend-config="dynamodb_table=terraform-locks" \
+          -backend-config="encrypt=true"
+
+    # Normal apply (idempotent)
+    - name: Terraform apply
+      run: |
+        terraform apply -auto-approve -input=false -var="region=${{ inputs.region }}"
+
+    - name: Outputs
+      run: terraform output
