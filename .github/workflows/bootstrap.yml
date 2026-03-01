@@ -1,12 +1,25 @@
-name: Bootstrap Remote State Backend
+name: Terraform Bootstrap (local state cached)
 
 on:
   workflow_dispatch:
     inputs:
+      project:
+        description: "Nom projet/client (sert pour la clé du cache)"
+        required: true
+        type: string
       region:
-        description: "AWS region (ex: eu-west-1)"
+        description: "AWS region"
         required: true
         default: "eu-west-1"
+        type: string
+      bucket_name:
+        description: "S3 bucket name (unique globalement)"
+        required: true
+        type: string
+      dynamodb_table_name:
+        description: "DynamoDB table name"
+        required: true
+        default: "terraform-locks"
         type: string
 
 permissions:
@@ -31,38 +44,44 @@ jobs:
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v3
       with:
-        terraform_version: 1.6.6
+        terraform_version: 1.14.0
 
-    # Try init remote backend (if already exists)
-    - name: Terraform init (try remote)
-      id: init_remote
-      continue-on-error: true
+    # ✅ Restore local state between runs (pas un backend remote Terraform)
+    - name: Restore Terraform local state (cache)
+      uses: actions/cache@v4
+      with:
+        path: |
+          terraform.tfstate
+          terraform.tfstate.backup
+          .terraform
+        key: tfstate-${{ inputs.project }}-${{ inputs.region }}
+
+    - name: Terraform init (NO remote backend)
+      run: terraform init -backend=false -input=false
+
+    - name: Terraform plan
       run: |
-        terraform init -input=false \
-          -backend-config="bucket=remote-state-infrastructure" \
-          -backend-config="key=bootstrap/terraform.tfstate" \
-          -backend-config="region=${{ inputs.region }}" \
-          -backend-config="dynamodb_table=terraform-locks" \
-          -backend-config="encrypt=true"
+        terraform plan -input=false \
+          -var="region=${{ inputs.region }}" \
+          -var="bucket_name=${{ inputs.bucket_name }}" \
+          -var="dynamodb_table_name=${{ inputs.dynamodb_table_name }}"
 
-    # First time: create infra with local state, then migrate to S3 backend
-    - name: First-time bootstrap (local -> migrate)
-      if: steps.init_remote.outcome == 'failure'
-      run: |
-        terraform init -input=false -backend=false
-        terraform apply -auto-approve -input=false -var="region=${{ inputs.region }}"
-
-        terraform init -input=false -migrate-state \
-          -backend-config="bucket=remote-state-infrastructure" \
-          -backend-config="key=bootstrap/terraform.tfstate" \
-          -backend-config="region=${{ inputs.region }}" \
-          -backend-config="dynamodb_table=terraform-locks" \
-          -backend-config="encrypt=true"
-
-    # Normal apply (idempotent)
     - name: Terraform apply
       run: |
-        terraform apply -auto-approve -input=false -var="region=${{ inputs.region }}"
+        terraform apply -auto-approve -input=false \
+          -var="region=${{ inputs.region }}" \
+          -var="bucket_name=${{ inputs.bucket_name }}" \
+          -var="dynamodb_table_name=${{ inputs.dynamodb_table_name }}"
 
-    - name: Outputs
-      run: terraform output
+    # ✅ Save updated state back to cache automatically (same key)
+    - name: Save Terraform local state (cache)
+      uses: actions/cache@v4
+      with:
+        path: |
+          terraform.tfstate
+          terraform.tfstate.backup
+          .terraform
+        key: tfstate-${{ inputs.project }}-${{ inputs.region }}
+
+    - name: Show outputs
+      run: terraform show -no-color
