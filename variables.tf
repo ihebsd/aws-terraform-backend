@@ -10,3 +10,7 @@ variable "bucket_name" {
 variable "dynamodb_table_name" {
   type = string
 }
+
+variable "project" {
+  type = string
+}

@@ -38,3 +38,9 @@ resource "aws_dynamodb_table" "locks" {
     type = "S"
   }
 }
+
+resource "aws_s3_object" "prefix_marker" {
+  bucket  = aws_s3_bucket.state_bucket.id
+  key     = "${trim(var.project, "/")}/"
+  content = ""
+}
