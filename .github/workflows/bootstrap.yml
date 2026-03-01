@@ -65,6 +65,7 @@ jobs:
           -var="region=${{ inputs.region }}" \
           -var="bucket_name=${{ inputs.bucket_name }}" \
           -var="dynamodb_table_name=${{ inputs.dynamodb_table_name }}"
+          -var="project=${{ inputs.project }}"
 
     - name: Terraform apply
       run: |
@@ -72,6 +73,7 @@ jobs:
           -var="region=${{ inputs.region }}" \
           -var="bucket_name=${{ inputs.bucket_name }}" \
           -var="dynamodb_table_name=${{ inputs.dynamodb_table_name }}"
+          -var="project=${{ inputs.project }}"
 
     # ✅ Save updated state back to cache automatically (same key)
     - name: Save Terraform local state (cache)
