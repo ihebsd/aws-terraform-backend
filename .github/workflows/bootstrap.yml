@@ -13,8 +13,9 @@ on:
         default: "eu-west-3"
         type: string
       bucket_name:
-        description: "S3 bucket name (unique globalement)"
+        description: "Default S3 bucket name"
         required: true
+        default: "infra-remote-state-backend"
         type: string
       dynamodb_table_name:
         description: "DynamoDB table name"
@@ -54,7 +55,7 @@ jobs:
           terraform.tfstate
           terraform.tfstate.backup
           .terraform
-        key: tfstate-${{ inputs.project }}-${{ inputs.region }}
+        key: tfstate-${{ inputs.bucket_name }}-${{ inputs.region }}
 
     - name: Terraform init (NO remote backend)
       run: terraform init -backend=false -input=false
@@ -83,7 +84,7 @@ jobs:
           terraform.tfstate
           terraform.tfstate.backup
           .terraform
-        key: tfstate-${{ inputs.project }}-${{ inputs.region }}
+        key: tfstate-${{ inputs.bucket_name }}-${{ inputs.region }}
 
     - name: Show outputs
       run: terraform show -no-color
