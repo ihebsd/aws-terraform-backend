@@ -64,7 +64,7 @@ jobs:
         terraform plan -input=false \
           -var="region=${{ inputs.region }}" \
           -var="bucket_name=${{ inputs.bucket_name }}" \
-          -var="dynamodb_table_name=${{ inputs.dynamodb_table_name }}"
+          -var="dynamodb_table_name=${{ inputs.dynamodb_table_name }}" \
           -var="project=${{ inputs.project }}"
 
     - name: Terraform apply
@@ -72,7 +72,7 @@ jobs:
         terraform apply -auto-approve -input=false \
           -var="region=${{ inputs.region }}" \
           -var="bucket_name=${{ inputs.bucket_name }}" \
-          -var="dynamodb_table_name=${{ inputs.dynamodb_table_name }}"
+          -var="dynamodb_table_name=${{ inputs.dynamodb_table_name }}" \
           -var="project=${{ inputs.project }}"
 
     # ✅ Save updated state back to cache automatically (same key)
